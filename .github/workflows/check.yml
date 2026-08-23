@@ -1,0 +1,52 @@
+name: Check HMC interview page
+
+on:
+  schedule:
+    # Every 10 minutes. GitHub's minimum is 5 minutes; actual runs can
+    # lag a few minutes behind during high load, especially on the
+    # exact top-of-hour.
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}  # lets you manually trigger a run from the Actions tab
+
+# Needed so the workflow can commit the updated state.json/screenshot back
+permissions:
+  contents: write
+
+concurrency:
+  group: hmc-interview-watcher
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Run monitor
+        env:
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python monitor.py
+
+      - name: Commit updated state
+        run: |
+          git config user.name "hmc-watcher-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state.json screenshot.png
+          git diff --cached --quiet || git commit -m "Update state [skip ci]"
+          git push
