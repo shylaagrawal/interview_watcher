@@ -1,6 +1,6 @@
-# HMC Interview Page Watcher
+# Interview Page Watcher
 
-Watches https://connect.hmc.edu/portal/hmc-interview and emails you (with a
+Watches and emails you (with a
 screenshot) the moment the page's content changes — including when the
 interview calendar opens up available slots.
 
